@@ -5,7 +5,7 @@ Application errors with a category, and nothing else.
 A service returns a code and a message a client may see. The edge that talks to the client maps the code to a status. Workers and other non-HTTP callers use the same error and never import `net/http`.
 
 ```bash
-go get github.com/chrisuzor/apperr
+go get github.com/chrisuzor/apperr@v0.1.1
 ```
 
 The repository is private. Set `GOPRIVATE=github.com/chrisuzor/apperr` before `go get`, or the public module proxy cannot read it.
@@ -76,7 +76,7 @@ http.Error(w, apperrhttp.PublicMessage(err), status)
 `apperrgin` is a separate module so the core does not depend on Gin. It needs Go 1.24.
 
 ```bash
-go get github.com/chrisuzor/apperr/apperrgin@v0.1.0
+go get github.com/chrisuzor/apperr/apperrgin@v0.1.1
 ```
 
 `New` stores a renderer and panics if it is nil. `Write` classifies the error, records it with `c.Error`, stops the chain, and calls the renderer. A nil error does not write. `message` is safe for the client. `err` is the original error: use it for a typed cause, such as a validation error wrapped with `Wrap`. Handle a validation error that was never wrapped before calling `Write`, or `Write` classifies it as internal.

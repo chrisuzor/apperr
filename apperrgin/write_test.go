@@ -107,3 +107,29 @@ func TestNilRendererPanics(t *testing.T) {
 		Write(c, err, nil)
 	})
 }
+
+func TestNilWriterPanics(t *testing.T) {
+	t.Parallel()
+
+	err := apperr.New(apperr.CodeNotFound, "missing")
+
+	t.Run("nil pointer", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		defer func() {
+			if recover() == nil {
+				t.Fatal("nil Writer did not panic")
+			}
+		}()
+		(*Writer)(nil).Write(c, err)
+	})
+
+	t.Run("zero value", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		defer func() {
+			if recover() == nil {
+				t.Fatal("zero Writer did not panic")
+			}
+		}()
+		(&Writer{}).Write(c, err)
+	})
+}

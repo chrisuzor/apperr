@@ -3,7 +3,7 @@ module github.com/chrisuzor/apperr/apperrgin
 go 1.24.0
 
 require (
-	github.com/chrisuzor/apperr v0.1.0
+	github.com/chrisuzor/apperr v0.1.1
 	github.com/gin-gonic/gin v1.10.0
 )
 

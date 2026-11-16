@@ -20,31 +20,42 @@ func TestWrite(t *testing.T) {
 	t.Parallel()
 
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	err := apperr.New(apperr.CodeForbidden, "exam started")
 
 	called := false
-	Write(c, apperr.New(apperr.CodeForbidden, "exam started"), func(_ *gin.Context, status int, code, message string) {
+	New(func(_ *gin.Context, status int, code, message string, got error) {
 		called = true
-		if status != http.StatusForbidden || code != "forbidden" || message != "exam started" {
-			t.Fatalf("status=%d code=%q message=%q", status, code, message)
+		if status != http.StatusForbidden || code != "forbidden" || message != "exam started" || got != err {
+			t.Fatalf("status=%d code=%q message=%q err=%v", status, code, message, got)
 		}
-	})
+	}).Write(c, err)
 	if !called {
 		t.Fatal("renderer was not called")
+	}
+	if !c.IsAborted() {
+		t.Fatal("context was not aborted")
+	}
+	if len(c.Errors) != 1 || c.Errors[0].Err != err {
+		t.Fatalf("context errors = %v", c.Errors)
 	}
 }
 
 func TestWriteHidesInternalMessage(t *testing.T) {
 	t.Parallel()
 
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 	err := apperr.Wrap(apperr.CodeInternal, errors.New("relation exam does not exist"), "load exam")
-	Write(c, err, func(_ *gin.Context, status int, code, message string) {
-		if status != http.StatusInternalServerError || code != "internal" || message != "internal error" {
-			t.Fatalf("status=%d code=%q message=%q", status, code, message)
+
+	called := false
+	Write(c, err, func(_ *gin.Context, status int, code, message string, got error) {
+		called = true
+		if status != http.StatusInternalServerError || code != "internal" || message != "internal error" || got != err {
+			t.Fatalf("status=%d code=%q message=%q err=%v", status, code, message, got)
 		}
 	})
+	if !called {
+		t.Fatal("renderer was not called")
+	}
 }
 
 func TestWriteSkipsNil(t *testing.T) {
@@ -53,15 +64,22 @@ func TestWriteSkipsNil(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
-	Write(c, nil, func(*gin.Context, int, string, string) {
+	Write(c, nil, func(*gin.Context, int, string, string, error) {
 		t.Fatal("rendered a nil error")
 	})
-	Write(nil, apperr.New(apperr.CodeNotFound, "missing"), func(*gin.Context, int, string, string) {
+	Write(nil, apperr.New(apperr.CodeNotFound, "missing"), func(*gin.Context, int, string, string, error) {
 		t.Fatal("rendered with a nil context")
 	})
 	Write(c, apperr.New(apperr.CodeNotFound, "missing"), nil)
+	New(nil).Write(c, apperr.New(apperr.CodeNotFound, "missing"))
 
 	if w.Body.Len() != 0 {
 		t.Fatalf("wrote a body: %s", w.Body.String())
+	}
+	if c.IsAborted() {
+		t.Fatal("aborted without a renderer")
+	}
+	if len(c.Errors) != 0 {
+		t.Fatalf("recorded errors without a renderer: %v", c.Errors)
 	}
 }

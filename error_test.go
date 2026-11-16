@@ -32,6 +32,9 @@ func TestNewAndWrap(t *testing.T) {
 	if Wrap(CodeNotFound, nil, "ignored") != nil {
 		t.Fatal("Wrap(nil) returned an error")
 	}
+	if Annotate(nil, "load question") != nil {
+		t.Fatal("Annotate(nil) returned an error")
+	}
 	if CodeOf(New("", "x")) != CodeInternal {
 		t.Fatal("empty code was not stored as internal")
 	}
@@ -85,6 +88,43 @@ func TestReplace(t *testing.T) {
 	wrapped := fmt.Errorf("query: %w", sql.ErrNoRows)
 	if Replace(wrapped, sql.ErrNoRows, notFound) != notFound {
 		t.Fatal("Replace did not use errors.Is")
+	}
+}
+
+func TestAnnotateKeepsCode(t *testing.T) {
+	t.Parallel()
+
+	inner := New(CodeNotFound, "question not found")
+	got := Annotate(inner, "load question")
+	if CodeOf(got) != CodeNotFound {
+		t.Fatalf("CodeOf = %q", CodeOf(got))
+	}
+	if Message(got) != "question not found" {
+		t.Fatalf("Message = %q", Message(got))
+	}
+	if got.Error() != "load question: question not found" {
+		t.Fatalf("Error = %q", got.Error())
+	}
+	if Annotate(inner, "") != inner {
+		t.Fatal("Annotate with an empty message changed the error")
+	}
+}
+
+func TestReplaceOptInKeepsCause(t *testing.T) {
+	t.Parallel()
+
+	replacement := Wrap(CodeNotFound, sql.ErrNoRows, "question not found")
+	got := Replace(sql.ErrNoRows, sql.ErrNoRows, replacement)
+	if CodeOf(got) != CodeNotFound {
+		t.Fatalf("CodeOf = %q", CodeOf(got))
+	}
+	if !errors.Is(got, sql.ErrNoRows) {
+		t.Fatal("opt-in replacement dropped sql.ErrNoRows")
+	}
+
+	plain := Replace(sql.ErrNoRows, sql.ErrNoRows, New(CodeNotFound, "question not found"))
+	if errors.Is(plain, sql.ErrNoRows) {
+		t.Fatal("default replacement kept sql.ErrNoRows")
 	}
 }
 

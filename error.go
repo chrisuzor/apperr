@@ -1,16 +1,22 @@
 package apperr
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // Code is the category an edge uses to choose a response.
 type Code string
 
 const (
-	CodeInvalid   Code = "invalid"
-	CodeNotFound  Code = "not_found"
-	CodeForbidden Code = "forbidden"
-	CodeConflict  Code = "conflict"
-	CodeInternal  Code = "internal"
+	CodeInvalid         Code = "invalid"
+	CodeUnauthenticated Code = "unauthenticated"
+	CodeForbidden       Code = "forbidden"
+	CodeNotFound        Code = "not_found"
+	CodeConflict        Code = "conflict"
+	CodeRateLimited     Code = "rate_limited"
+	CodeUnavailable     Code = "unavailable"
+	CodeInternal        Code = "internal"
 )
 
 // Error is an application error with a category and a client-safe message.
@@ -31,7 +37,12 @@ func New(code Code, msg string) error {
 }
 
 // Wrap returns an error that classifies as code and unwraps to err.
-// A nil err returns nil. An empty code is stored as [CodeInternal].
+// The new code replaces any code already on err. To keep the existing code
+// and client message, use [Annotate].
+//
+// A nil err returns nil. return Wrap(code, err, msg) therefore stays a
+// success when err is nil, including when a failure path wraps the wrong
+// variable. An empty code is stored as [CodeInternal].
 func Wrap(code Code, err error, msg string) error {
 	if err == nil {
 		return nil
@@ -42,7 +53,18 @@ func Wrap(code Code, err error, msg string) error {
 	return &Error{code: code, msg: msg, err: err}
 }
 
+// Annotate adds context and keeps the code and client message already on err.
+// A nil err returns nil. An empty msg returns err unchanged.
+func Annotate(err error, msg string) error {
+	if err == nil || msg == "" {
+		return err
+	}
+	return fmt.Errorf("%s: %w", msg, err)
+}
+
 // Replace returns replacement when errors.Is(err, match).
+// The sentinel is not attached to replacement. To keep it on the chain, pass
+// a replacement that already wraps it, such as Wrap(CodeNotFound, err, msg).
 // A nil err, a nil match, or a nil replacement returns err unchanged.
 func Replace(err, match, replacement error) error {
 	if err == nil || match == nil || replacement == nil {

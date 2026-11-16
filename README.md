@@ -8,6 +8,8 @@ A service returns a code and a message a client may see. The edge that talks to 
 go get github.com/chrisuzor/apperr
 ```
 
+The repository is private. Set `GOPRIVATE=github.com/chrisuzor/apperr` before `go get`, or the public module proxy cannot read it.
+
 Go 1.21 or newer.
 
 ## Errors

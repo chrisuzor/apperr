@@ -70,16 +70,40 @@ func TestWriteSkipsNil(t *testing.T) {
 	Write(nil, apperr.New(apperr.CodeNotFound, "missing"), func(*gin.Context, int, string, string, error) {
 		t.Fatal("rendered with a nil context")
 	})
-	Write(c, apperr.New(apperr.CodeNotFound, "missing"), nil)
-	New(nil).Write(c, apperr.New(apperr.CodeNotFound, "missing"))
+	Write(c, nil, nil)
 
 	if w.Body.Len() != 0 {
 		t.Fatalf("wrote a body: %s", w.Body.String())
 	}
 	if c.IsAborted() {
-		t.Fatal("aborted without a renderer")
+		t.Fatal("aborted a nil error")
 	}
 	if len(c.Errors) != 0 {
-		t.Fatalf("recorded errors without a renderer: %v", c.Errors)
+		t.Fatalf("recorded errors for a nil error: %v", c.Errors)
 	}
+}
+
+func TestNilRendererPanics(t *testing.T) {
+	t.Parallel()
+
+	err := apperr.New(apperr.CodeNotFound, "missing")
+
+	t.Run("constructor", func(t *testing.T) {
+		defer func() {
+			if recover() == nil {
+				t.Fatal("New(nil) did not panic")
+			}
+		}()
+		New(nil)
+	})
+
+	t.Run("write function", func(t *testing.T) {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		defer func() {
+			if recover() == nil {
+				t.Fatal("Write with a nil renderer did not panic")
+			}
+		}()
+		Write(c, err, nil)
+	})
 }

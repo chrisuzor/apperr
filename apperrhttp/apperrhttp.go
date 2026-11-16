@@ -51,14 +51,10 @@ func PublicMessage(err error) string {
 }
 
 // Code returns the code a client may see.
-// A code this package does not map, and [apperr.CodeInternal], are reported as internal.
+// A 500, including an unknown code, is reported as internal.
 func Code(err error) string {
-	switch apperr.CodeOf(err) {
-	case apperr.CodeInvalid, apperr.CodeUnauthenticated, apperr.CodeForbidden,
-		apperr.CodeNotFound, apperr.CodeConflict, apperr.CodeRateLimited,
-		apperr.CodeUnavailable:
-		return string(apperr.CodeOf(err))
-	default:
+	if Status(err) == http.StatusInternalServerError {
 		return string(apperr.CodeInternal)
 	}
+	return string(apperr.CodeOf(err))
 }

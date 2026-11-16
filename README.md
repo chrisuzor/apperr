@@ -79,7 +79,7 @@ http.Error(w, apperrhttp.PublicMessage(err), status)
 go get github.com/chrisuzor/apperr/apperrgin@v0.1.0
 ```
 
-`New` stores a renderer. `Write` classifies the error, records it with `c.Error`, stops the chain, and calls the renderer. A nil error does not write. `message` is safe for the client. `err` is the original error: use it for a typed cause, such as a validation error wrapped with `Wrap`. Handle a validation error that was never wrapped before calling `Write`, or `Write` classifies it as internal.
+`New` stores a renderer and panics if it is nil. `Write` classifies the error, records it with `c.Error`, stops the chain, and calls the renderer. A nil error does not write. `message` is safe for the client. `err` is the original error: use it for a typed cause, such as a validation error wrapped with `Wrap`. Handle a validation error that was never wrapped before calling `Write`, or `Write` classifies it as internal.
 
 ```go
 write := apperrgin.New(func(c *gin.Context, status int, code, message string, err error) {

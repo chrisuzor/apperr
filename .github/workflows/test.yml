@@ -5,6 +5,20 @@ on:
   pull_request:
 
 jobs:
+  core-121:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - name: Test and vet core
+        env:
+          GOWORK: "off"
+        run: |
+          go test -race ./...
+          go vet ./...
+
   test:
     runs-on: ubuntu-latest
     steps:
